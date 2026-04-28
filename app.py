@@ -62,7 +62,37 @@ def render_mesa(m_id, col):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT (AJUSTE EXTRA NA MESA 6) ---
+# --- LAYOUT (AJUSTE MESA 6) ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
-if not
+if not bloqueio:
+    c1, c2, c3 = st.columns(3)
+
+    with c1: # ALA MAR
+        st.caption("ALA MAR")
+        for m in [11, 10, 9, 8]: render_mesa(m, c1)
+        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True) 
+        render_mesa(7, c1) # Alinhada com a 6
+
+    with c2: # CENTRO
+        st.caption("CENTRO")
+        for m in [12, 19, 20]: render_mesa(m, c2)
+        # ESPAÇO AMPLIADO PARA A 6 DESCER
+        st.markdown("<div style='height:280px;'></div>", unsafe_allow_html=True) 
+        render_mesa(6, c2) 
+        # MESA 4 (PERFEITA)
+        st.markdown("<div style='height:165px;'></div>", unsafe_allow_html=True) 
+        render_mesa(4, c2) 
+
+    with c3: # JANELA
+        st.caption("JANELA")
+        for m in [14, 16, 17, 18]: render_mesa(m, c3)
+        st.markdown("<div style='text-align:center;border:1px dashed #444;margin:10px 0;font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
+        render_mesa(1, c3)
+        render_mesa(2, c3) # Alinhada com a 4
+        render_mesa(3, c3)
+
+st.write("---")
+if st.button("LIMPAR TUDO"):
+    st.session_state.sala = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
+    st.rerun()
