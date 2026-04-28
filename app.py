@@ -4,7 +4,7 @@ from datetime import datetime, time
 # 1. Configuração e Estética
 st.set_page_config(page_title="Pangeia Nazaré", layout="wide")
 
-# CSS numa linha única para não quebrar ao fazer copy/paste
+# CSS numa linha única para evitar qualquer erro de sintaxe
 st.markdown("<style>.stApp{background-color:#050505;color:#D4AF37;} [data-testid='stSidebar']{background-color:#0c0c0c;border-right:1px solid #D4AF37;} .mesa{border:1px solid #D4AF37;padding:10px;border-radius:5px;text-align:center;margin-bottom:5px;background:rgba(212,175,55,0.05);} .ocupada{background:#D4AF37 !important;color:#000 !important;font-weight:bold;} .nota-display{font-size:0.75em;color:#888;font-style:italic;}</style>", unsafe_allow_html=True)
 
 # 2. Dados das Mesas
@@ -56,7 +56,7 @@ def render_mesa(m_id, col):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT MATEMATICAMENTE CALCULADO ---
+# --- LAYOUT MATEMÁTICO PERFEITO ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
 if not bloqueio:
@@ -66,7 +66,8 @@ if not bloqueio:
         st.caption("ALA MAR")
         for m in [11, 10, 9, 8]: 
             render_mesa(m, c1)
-        st.markdown("<div style='height:45px;'></div>", unsafe_allow_html=True) 
+        # Espaço equivalente à altura da caixa "ESCADAS"
+        st.markdown("<div style='height:55px;'></div>", unsafe_allow_html=True) 
         render_mesa(7, c1) 
 
     with c2: # CENTRO
@@ -74,12 +75,11 @@ if not bloqueio:
         for m in [12, 19, 20]: 
             render_mesa(m, c2)
         
-        # O PULO DO GATO: Empurra a 6 exatamente para a linha da 7
-        st.markdown("<div style='height:185px;'></div>", unsafe_allow_html=True) 
+        # Espaço equivalente a (1 Mesa + altura das ESCADAS) para alinhar a 6 com a 7 e a 1
+        st.markdown("<div style='height:210px;'></div>", unsafe_allow_html=True) 
         render_mesa(6, c2) 
         
-        # Compensação: Como a 6 desceu muito, a 4 precisa de um espaço mínimo para bater com a 2
-        st.markdown("<div style='height:35px;'></div>", unsafe_allow_html=True) 
+        # REMOVIDO o espaçador da 4. Como a 6 alinhou com a 1, a 4 alinha agora com a 2!
         render_mesa(4, c2) 
 
     with c3: # JANELA
