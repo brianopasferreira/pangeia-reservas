@@ -17,7 +17,7 @@ st.markdown("""
 # 2. Definição das Mesas
 MESAS_INFO = {1:"2p", 2:"4-7p", 3:"2p", 4:"4-7p", 6:"2p", 7:"2p", 8:"4-6p", 9:"4-6p", 10:"2p", 11:"2p", 12:"2p", 14:"2p", 16:"4-7p", 17:"4-7p", 18:"2-3p", 19:"2p", 20:"2p"}
 
-# 3. Inicialização de Memória Independente por Turno
+# 3. Inicialização de Memória (Proteção contra KeyError)
 if 'sala' not in st.session_state:
     st.session_state.sala = {
         "Almoço": {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO},
@@ -41,7 +41,6 @@ with st.sidebar:
             st.error("ENCERRADO DOMINGO AO JANTAR")
             bloqueio = True
         else:
-            # Horários dinâmicos por turno
             if turno_sel == "Almoço":
                 horas = [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h == 12 and m >= 30) or (h == 13) or (h == 14) or (h == 15 and m == 0)]
             else:
@@ -54,30 +53,31 @@ with st.sidebar:
 
 # --- FUNÇÃO DE RENDERIZAÇÃO ---
 def render_mesa(m_id, col, turno):
-    m = st.session_state.sala[turno][m_id]
-    classe = "mesa ocupada" if m["ocupada"] else "mesa"
-    txt = f"<b>M{m_id}</b><br><small>{MESAS_INFO[m_id]}</small>"
-    
-    if m["ocupada"]:
-        txt += f"<br>{m['info']}<br><span class='nota-display'>{m['nota']}</span>"
-    else:
-        txt += "<br>LIVRE"
-    
-    col.markdown(f"<div class='{classe}'>{txt}</div>", unsafe_allow_html=True)
-    
-    # Lógica de botões corrigida para evitar SyntaxError
-    if not m["ocupada"] and not bloqueio:
-        if col.button(f"SENTAR {m_id}", key=f"s{m_id}_{turno}"):
-            if nome_res:
-                info_reserva = f"{nome_res} ({pax_res}p) @ {hora_sel}"
-                st.session_state.sala[turno][m_id] = {"ocupada": True, "info": info_reserva, "nota": nota_res}
+    # Verifica se a mesa existe no estado atual para evitar erros
+    if turno in st.session_state.sala and m_id in st.session_state.sala[turno]:
+        m = st.session_state.sala[turno][m_id]
+        classe = "mesa ocupada" if m["ocupada"] else "mesa"
+        txt = f"<b>M{m_id}</b><br><small>{MESAS_INFO[m_id]}</small>"
+        
+        if m["ocupada"]:
+            txt += f"<br>{m['info']}<br><span class='nota-display'>{m['nota']}</span>"
+        else:
+            txt += "<br>LIVRE"
+        
+        col.markdown(f"<div class='{classe}'>{txt}</div>", unsafe_allow_html=True)
+        
+        if not m["ocupada"] and not bloqueio:
+            if col.button(f"SENTAR {m_id}", key=f"s{m_id}_{turno}"):
+                if nome_res:
+                    info_pax = f"{nome_res} ({pax_res}p) @ {hora_sel}"
+                    st.session_state.sala[turno][m_id] = {"ocupada": True, "info": info_pax, "nota": nota_res}
+                    st.rerun()
+                else:
+                    st.error("Falta o nome!")
+        elif m["ocupada"]:
+            if col.button(f"LIBERTAR {m_id}", key=f"l{m_id}_{turno}"):
+                st.session_state.sala[turno][m_id] = {"ocupada": False, "info": "", "nota": ""}
                 st.rerun()
-            else:
-                st.error("Falta o nome!")
-    elif m["ocupada"]:
-        if col.button(f"LIBERTAR {m_id}", key=f"l{m_id}_{turno}"):
-            st.session_state.sala[turno][m_id] = {"ocupada": False, "info": "", "nota": ""}
-            st.rerun()
 
 # --- MAPA DA SALA ---
 st.markdown(f"<h2 style='text-align:center;'>PANGEIA NAZARÉ - {turno_sel.upper() if not bloqueio else ''}</h2>", unsafe_allow_html=True)
@@ -87,29 +87,30 @@ if not bloqueio:
 
     with c1: # ALA MAR
         st.caption("ALA MAR")
-        for m in [11, 10, 9, 8]:
-            render_mesa(m, c1, turno_sel)
+        for m_id in [11, 10, 9, 8]:
+            render_mesa(m_id, c1, turno_sel)
         st.markdown("<div style='height:55px;'></div>", unsafe_allow_html=True) 
         render_mesa(7, c1, turno_sel) 
 
     with c2: # CENTRO
         st.caption("CENTRO")
-        for m in [12, 19, 20]:
-            render_mesa(m, c2, turno_sel)
+        for m_id in [12, 19, 20]:
+            render_mesa(m_id, c2, turno_sel)
         st.markdown("<div style='height:210px;'></div>", unsafe_allow_html=True) 
         render_mesa(6, c2, turno_sel) 
         render_mesa(4, c2, turno_sel) 
 
     with c3: # JANELA
         st.caption("JANELA")
-        for m in [14, 16, 17, 18]:
-            render_mesa(m, c3, turno_sel)
+        for m_id in [14, 16, 17, 18]:
+            render_mesa(m_id, c3, turno_sel)
         st.markdown("<div style='text-align:center;border:1px dashed #444;margin:10px 0;font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
         render_mesa(1, c3, turno_sel)
         render_mesa(2, c3, turno_sel) 
         render_mesa(3, c3, turno_sel)
 
 st.write("---")
-if st.button("LIMPAR ESTE TURNO"):
-    st.session_state.sala[turno_sel] = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
-    st.rerun()
+if not bloqueio:
+    if st.button("LIMPAR TURNO ATUAL"):
+        st.session_state.sala[turno_sel] = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
+        st.rerun()
