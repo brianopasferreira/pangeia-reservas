@@ -1,7 +1,7 @@
 import streamlit as st
-from datetime import datetime
+from datetime import datetime, time
 
-# 1. Configuração Visual
+# 1. Configuração Visual e Estética
 st.set_page_config(page_title="Pangeia Nazaré - Gestão", layout="wide")
 
 st.markdown("""
@@ -12,7 +12,7 @@ st.markdown("""
         border: 1px solid rgba(212, 175, 55, 0.3);
         padding: 15px; border-radius: 8px; text-align: center;
         background: rgba(255, 255, 255, 0.02); margin-bottom: 10px;
-        min-height: 100px;
+        min-height: 105px;
     }
     .mesa-ocupada { 
         background: linear-gradient(145deg, #D4AF37, #B8860B) !important;
@@ -23,7 +23,7 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Estado das Mesas
+# 2. Base de Dados das Mesas
 MESAS_INFO = {
     1: "2p", 2: "4-7p", 3: "2p", 4: "4-7p", 6: "2p", 7: "2p", 8: "4-6p", 
     9: "4-6p", 10: "2p", 11: "2p", 12: "2p", 14: "2p", 16: "4-7p", 
@@ -33,11 +33,24 @@ MESAS_INFO = {
 if 'sala' not in st.session_state:
     st.session_state.sala = {m: {"ocupada": False, "nome": ""} for m in MESAS_INFO}
 
-# --- SIDEBAR ---
+# --- SIDEBAR: REGRAS DE FUNCIONAMENTO ---
 with st.sidebar:
     st.title("RESERVA")
-    nome_reserva = st.text_input("Nome Cliente")
-    pax_reserva = st.number_input("Nº Pessoas", 1, 20, 2)
+    data_sel = st.date_input("Data", datetime.now())
+    
+    # Regra: Segunda-feira Fechado
+    bloqueio = data_sel.weekday() == 0 
+    
+    if bloqueio:
+        st.error("FECHADO À SEGUNDA")
+    else:
+        turno = st.selectbox("Turno", ["Almoço (12:00-15:00)", "Jantar (19:00-22:00)"])
+        # Limitação de horários conforme solicitado
+        h_lim = (time(12,0), time(15,0)) if "Almoço" in turno else (time(19,0), time(22,0))
+        hora_sel = st.slider("Hora", h_lim[0], h_lim[1], h_lim[0])
+        
+        nome_reserva = st.text_input("Nome Cliente")
+        pax_reserva = st.number_input("Nº Pessoas", 1, 20, 2)
 
 # --- FUNÇÃO DE RENDERIZAÇÃO ---
 def exibir_mesa(m_id, col):
@@ -47,47 +60,28 @@ def exibir_mesa(m_id, col):
     
     col.markdown(f'<div class="{estilo}"><b>M{m_id}</b><br><small>{MESAS_INFO[m_id]}</small><br>{status}</div>', unsafe_allow_html=True)
     
-    c_btn1, c_btn2 = col.columns(2)
     if not info["ocupada"]:
-        if c_btn1.button("SENTAR", key=f"s{m_id}"):
-            if nome_reserva:
+        if col.button(f"SENTAR M{m_id}", key=f"s{m_id}"):
+            if not bloqueio and nome_reserva:
                 st.session_state.sala[m_id] = {"ocupada": True, "nome": f"{nome_reserva} ({pax_reserva}p)"}
                 st.rerun()
-            else: st.sidebar.error("Falta o nome!")
+            elif not nome_reserva: st.sidebar.error("Insira o nome!")
     else:
-        if c_btn1.button("LIBERTAR", key=f"l{m_id}"):
+        if col.button(f"LIBERTAR M{m_id}", key=f"l{m_id}"):
             st.session_state.sala[m_id] = {"ocupada": False, "nome": ""}
             st.rerun()
 
-# --- LAYOUT DE SALA ---
+# --- MAPA DE SALA (ALINHAMENTOS CONFORME DESENHO) ---
 st.markdown("<h2 style='text-align:center; letter-spacing:5px;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
-col_esq, col_meio, col_dir = st.columns(3)
+if not bloqueio:
+    col_esq, col_meio, col_dir = st.columns(3)
 
-with col_esq: # ALA PAREDE
-    st.markdown("<div class='label-zona'>PAREDE</div>", unsafe_allow_html=True)
-    for m in [11, 10, 9, 8]: exibir_mesa(m, col_esq)
-    st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True) # Alinhamento
-    exibir_mesa(7, col_esq) # NIVELADA COM A 6
+    with col_esq: # PAREDE ESQUERDA
+        st.markdown("<div class='label-zona'>PAREDE</div>", unsafe_allow_html=True)
+        for m in [11, 10, 9, 8]: exibir_mesa(m, col_esq)
+        st.markdown("<div style='height:45px;'></div>", unsafe_allow_html=True) # Alinhamento para a 7
+        exibir_mesa(7, col_esq) 
 
-with col_meio: # CENTRO
-    st.markdown("<div class='label-zona'>CENTRO</div>", unsafe_allow_html=True)
-    exibir_mesa(12, col_meio)
-    exibir_mesa(19, col_meio)
-    exibir_mesa(20, col_meio)
-    st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
-    exibir_mesa(6, col_meio) # NIVELADA COM A 7
-    st.markdown("<div style='height:115px;'></div>", unsafe_allow_html=True) # Espaço para alinhar 4 com 2
-    exibir_mesa(4, col_meio) # NIVELADA COM A 2
-
-with col_dir: # ALA JANELA
-    st.markdown("<div class='label-zona'>JANELA</div>", unsafe_allow_html=True)
-    for m in [14, 16, 17, 18]: exibir_mesa(m, col_dir)
-    st.markdown("<div class='escadas'>ESCADAS</div><br>", unsafe_allow_html=True)
-    exibir_mesa(1, col_dir)
-    exibir_mesa(2, col_dir) # NIVELADA COM A 4
-    exibir_mesa(3, col_dir)
-
-if st.button("LIMPAR MAPA"):
-    st.session_state.sala = {m: {"ocupada": False, "nome": ""} for m in MESAS_INFO}
-    st.rerun()
+    with col_meio: # CENTRO
+        st.markdown("<div class='label-zona'>CENT
