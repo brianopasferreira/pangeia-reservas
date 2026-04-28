@@ -62,7 +62,7 @@ def render_mesa(m_id, col):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT (AJUSTE NA MESA 6) ---
+# --- LAYOUT (FOCO NA MESA 6) ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
 if not bloqueio:
@@ -77,10 +77,10 @@ if not bloqueio:
     with c2: # CENTRO
         st.caption("CENTRO")
         for m in [12, 19, 20]: render_mesa(m, c2)
-        # AJUSTE DA MESA 6 PARA ALINHAR COM A 7
-        st.markdown("<div style='height:38px;'></div>", unsafe_allow_html=True) 
+        # AUMENTADO ESPAÇO PARA A 6 DESCER ATÉ AO NÍVEL DA 7
+        st.markdown("<div style='height:110px;'></div>", unsafe_allow_html=True) 
         render_mesa(6, c2) 
-        # MESA 4 MANTIDA (PERFEITA)
+        # MESA 4 (PERFEITA)
         st.markdown("<div style='height:165px;'></div>", unsafe_allow_html=True) 
         render_mesa(4, c2) 
 
