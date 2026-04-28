@@ -1,35 +1,68 @@
 import streamlit as st
-import pandas as pd
 from datetime import datetime
 
-# Configuração e Estética Pangeia
-st.set_page_config(page_title="Pangeia Nazaré - Reservas", layout="wide")
+# 1. Configuração da Página e Branding Pangeia
+st.set_page_config(
+    page_title="Pangeia Nazaré - Gestão de Sala",
+    page_icon="🔱",
+    layout="wide"
+)
 
+# 2. Estilo CSS Customizado (Preto e Dourado)
 st.markdown("""
     <style>
-    .stApp { background-color: #000000; color: #D4AF37; }
-    h1, h2, h3 { color: #D4AF37 !important; }
-    .stButton>button { 
-        background-color: #D4AF37; color: black; font-weight: bold; width: 100%;
+    /* Fundo principal */
+    .stApp {
+        background-color: #000000;
+        color: #D4AF37;
     }
+    
+    /* Títulos */
+    h1, h2, h3 {
+        color: #D4AF37 !important;
+        text-align: center;
+        font-family: 'serif';
+    }
+    
+    /* Cartão da Mesa */
     .mesa-box {
         border: 1px solid #D4AF37;
-        padding: 15px;
-        border-radius: 8px;
+        padding: 20px;
+        border-radius: 12px;
         text-align: center;
-        background-color: #111111;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
+        transition: 0.3s;
+        min-height: 120px;
     }
-    .status-badge {
-        padding: 2px 8px;
-        border-radius: 4px;
-        font-size: 0.8em;
+    
+    /* Botões */
+    .stButton>button {
+        background-color: #D4AF37;
+        color: black;
         font-weight: bold;
+        border-radius: 5px;
+        border: none;
+        width: 100%;
+        margin-top: 10px;
+    }
+    
+    .stButton>button:hover {
+        background-color: #FAFAD2;
+        color: black;
+    }
+
+    /* Inputs */
+    .stTextInput>div>div>input {
+        background-color: #111111;
+        color: #D4AF37;
+        border: 1px solid #444;
+        text-align: center;
     }
     </style>
-    """, unsafe_content_allowed=True)
+    """, unsafe_allow_html=True)
 
-# Definição das mesas (Exatamente como na tua foto)
+# 3. Definição das Mesas (Conforme a tua planta)
+# Nota: Mesas 5, 13 e 15 foram removidas como pedido
 MESAS = {
     1: "2pax", 2: "4-7pax", 3: "3pax", 4: "4-7pax", 6: "2pax", 
     7: "4-6pax", 8: "4-6pax", 9: "4-6pax", 10: "2pax", 11: "2pax", 
@@ -37,72 +70,18 @@ MESAS = {
     19: "2pax", 20: "2pax"
 }
 
-if 'base_reservas' not in st.session_state:
-    st.session_state.base_reservas = []
+# 4. Inicialização do Estado da Sala (Memória da App)
+if 'status_sala' not in st.session_state:
+    st.session_state.status_sala = {m: {"estado": "Livre", "cliente": ""} for m in MESAS}
 
-# --- INTERFACE ---
-st.title("🔱 Pangeia Nazaré | Gestão de Reservas")
-
-col_form, col_mapa = st.columns([1, 2])
-
-with col_form:
-    st.subheader("Registar Reserva")
-    with st.form("nova_reserva"):
-        nome = st.text_input("Nome do Cliente")
-        pax = st.number_input("Pessoas", min_value=1, value=2)
-        data = st.date_input("Data", datetime.now())
-        turno = st.selectbox("Turno", ["Almoço", "Jantar"])
-        mesa = st.selectbox("Mesa", list(MESAS.keys()))
-        
-        if st.form_submit_button("Confirmar Reserva"):
-            nova_res = {
-                "Data": str(data), "Turno": turno, "Mesa": mesa, 
-                "Cliente": nome, "Pax": pax, "Chegou": False
-            }
-            st.session_state.base_reservas.append(nova_res)
-            st.success("Reserva guardada!")
-
-with col_mapa:
-    st.subheader("Ocupação de Sala")
-    data_sel = st.date_input("Consultar Dia", datetime.now(), key="view_date")
-    turno_sel = st.radio("Turno", ["Almoço", "Jantar"], horizontal=True)
-    
-    # Filtrar reservas do turno
-    res_turno = [r for r in st.session_state.base_reservas 
-                 if r['Data'] == str(data_sel) and r['Turno'] == turno_sel]
-    
-    # Gerar a Grid de Mesas
-    cols = st.columns(4)
-    for i, (m_id, cap) in enumerate(MESAS.items()):
-        # Verificar se a mesa tem reserva
-        reserva_atual = next((r for r in res_turno if r['Mesa'] == m_id), None)
-        
-        with cols[i % 4]:
-            if reserva_atual:
-                bg = "#D4AF37" if reserva_atual['Chegou'] else "#333333"
-                txt = "#000000" if reserva_atual['Chegou'] else "#D4AF37"
-                st.markdown(f"""
-                    <div class="mesa-box" style="background-color: {bg}; color: {txt}; border: 1px solid #D4AF37;">
-                        <strong>Mesa {m_id}</strong><br>
-                        <small>{reserva_atual['Cliente']} ({reserva_atual['Pax']}pax)</small>
-                    </div>
-                """, unsafe_content_allowed=True)
-                if not reserva_atual['Chegou']:
-                    if st.button(f"Sentar M{m_id}", key=f"check_{m_id}"):
-                        reserva_atual['Chegou'] = True
-                        st.rerun()
-            else:
-                st.markdown(f"""
-                    <div class="mesa-box">
-                        <strong>Mesa {m_id}</strong><br>
-                        <small style="color: #666;">{cap} - Livre</small>
-                    </div>
-                """, unsafe_content_allowed=True)
-
-# --- LISTA COMPLETA ---
+# 5. Cabeçalho
+st.markdown("<h1>🔱 PANGEIA NAZARÉ</h1>", unsafe_allow_html=True)
+st.markdown("<p style='text-align:center; color:#D4AF37;'>Gestão de Mesas e Ocupação</p>", unsafe_allow_html=True)
 st.write("---")
-if st.checkbox("Ver Lista Detalhada de Reservas"):
-    if st.session_state.base_reservas:
-        st.table(pd.DataFrame(st.session_state.base_reservas))
-    else:
-        st.write("Ainda não existem reservas registadas.")
+
+# 6. Grelha de Mesas (Visualização de Sala)
+# Criamos 4 colunas para que no telemóvel fique organizado e no PC espaçoso
+cols = st.columns(4)
+
+for i, (m_id, capacidade) in enumerate(MESAS.items()):
+    dados_mesa = st.session_state.status_sala[m_id]
