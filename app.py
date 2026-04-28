@@ -58,7 +58,7 @@ def render_mesa(m_id, col):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT AJUSTADO ---
+# --- LAYOUT FINALIZADO ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
 if not bloqueio:
@@ -67,16 +67,16 @@ if not bloqueio:
     with c1: # ALA MAR
         st.caption("ALA MAR")
         for m in [11, 10, 9, 8]: render_mesa(m, c1)
-        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True) 
+        # Espaçador para a 7
+        st.markdown("<div style='height:40px;'></div>", unsafe_allow_html=True) 
         render_mesa(7, c1) 
 
     with c2: # CENTRO
         st.caption("CENTRO")
         for m in [12, 19, 20]: render_mesa(m, c2)
-        # REDUZIDO PARA ALINHAR COM A 7 (15px)
-        st.markdown("<div style='height:15px;'></div>", unsafe_allow_html=True) 
+        # REMOVIDO ESPAÇADOR GRANDE: A 6 sobe para ficar ao lado da 7
         render_mesa(6, c2) 
-        # MANTIDO PARA ALINHAR COM A 2 (165px)
+        # MANTIDO ESPAÇADOR DA 4: Fica ao lado da 2
         st.markdown("<div style='height:165px;'></div>", unsafe_allow_html=True) 
         render_mesa(4, c2) 
 
