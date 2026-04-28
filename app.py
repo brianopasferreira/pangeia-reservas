@@ -24,7 +24,7 @@ if 'sala' not in st.session_state:
         "Jantar": {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
     }
 
-# --- SIDEBAR (CONTROLO DE TURNO E HORÁRIO) ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("RESERVA")
     data_sel = st.date_input("Data", datetime.now())
@@ -41,9 +41,9 @@ with st.sidebar:
             st.error("ENCERRADO DOMINGO AO JANTAR")
             bloqueio = True
         else:
-            # Filtro de horas específico por turno
+            # Horários dinâmicos por turno
             if turno_sel == "Almoço":
-                horas = [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h == 12 and m >= 30) or (h < 15) or (h == 15 and m == 0)]
+                horas = [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h == 12 and m >= 30) or (h == 13) or (h == 14) or (h == 15 and m == 0)]
             else:
                 horas = [f"{h:02d}:{m:02d}" for h in range(19, 23) for m in [0, 15, 30, 45] if (h >= 19 and h <= 22)]
 
@@ -65,30 +65,51 @@ def render_mesa(m_id, col, turno):
     
     col.markdown(f"<div class='{classe}'>{txt}</div>", unsafe_allow_html=True)
     
+    # Lógica de botões corrigida para evitar SyntaxError
     if not m["ocupada"] and not bloqueio:
         if col.button(f"SENTAR {m_id}", key=f"s{m_id}_{turno}"):
             if nome_res:
-                info_pax = f"{nome_res} ({pax_res}p) @ {hora_sel}"
-                st.session_state.sala[turno][m_id] = {"ocupada": True, "info": info_pax, "nota": nota_res}
+                info_reserva = f"{nome_res} ({pax_res}p) @ {hora_sel}"
+                st.session_state.sala[turno][m_id] = {"ocupada": True, "info": info_reserva, "nota": nota_res}
                 st.rerun()
-            else: st.error("Falta o nome!")
+            else:
+                st.error("Falta o nome!")
     elif m["ocupada"]:
         if col.button(f"LIBERTAR {m_id}", key=f"l{m_id}_{turno}"):
             st.session_state.sala[turno][m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- MAPA DA SALA (ALINHAMENTO GEOMÉTRICO) ---
+# --- MAPA DA SALA ---
 st.markdown(f"<h2 style='text-align:center;'>PANGEIA NAZARÉ - {turno_sel.upper() if not bloqueio else ''}</h2>", unsafe_allow_html=True)
 
 if not bloqueio:
     c1, c2, c3 = st.columns(3)
 
-    with c1: # ALA MAR (Esquerda)
+    with c1: # ALA MAR
         st.caption("ALA MAR")
-        for m in [11, 10, 9, 8]: render_mesa(m, c1, turno_sel)
-        st.markdown("<div style='height:55px;'></div>", unsafe_allow_html=True) # Alinhamento M7 com Escadas
+        for m in [11, 10, 9, 8]:
+            render_mesa(m, c1, turno_sel)
+        st.markdown("<div style='height:55px;'></div>", unsafe_allow_html=True) 
         render_mesa(7, c1, turno_sel) 
 
     with c2: # CENTRO
         st.caption("CENTRO")
-        for m in [12, 19, 20
+        for m in [12, 19, 20]:
+            render_mesa(m, c2, turno_sel)
+        st.markdown("<div style='height:210px;'></div>", unsafe_allow_html=True) 
+        render_mesa(6, c2, turno_sel) 
+        render_mesa(4, c2, turno_sel) 
+
+    with c3: # JANELA
+        st.caption("JANELA")
+        for m in [14, 16, 17, 18]:
+            render_mesa(m, c3, turno_sel)
+        st.markdown("<div style='text-align:center;border:1px dashed #444;margin:10px 0;font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
+        render_mesa(1, c3, turno_sel)
+        render_mesa(2, c3, turno_sel) 
+        render_mesa(3, c3, turno_sel)
+
+st.write("---")
+if st.button("LIMPAR ESTE TURNO"):
+    st.session_state.sala[turno_sel] = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
+    st.rerun()
