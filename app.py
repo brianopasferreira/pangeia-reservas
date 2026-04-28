@@ -24,7 +24,7 @@ if 'sala' not in st.session_state:
 with st.sidebar:
     st.title("RESERVA")
     data_sel = st.date_input("Data", datetime.now())
-    dia_semana = data_sel.weekday() # 0=Segunda, 6=Domingo
+    dia_semana = data_sel.weekday() 
     
     bloqueio = False
     if dia_semana == 0:
@@ -33,21 +33,19 @@ with st.sidebar:
     else:
         turno = st.selectbox("Turno", ["Almoço", "Jantar"])
         
-        # Validação específica para Domingo ao Jantar
         if dia_semana == 6 and turno == "Jantar":
             st.error("ENCERRADO DOMINGO AO JANTAR")
             bloqueio = True
         else:
-            # Definição de horários oficiais
+            # GERADOR DINÂMICO DE HORAS
             if turno == "Almoço":
-                h_min, h_max = time(12, 30), time(15, 0)
+                # Lista de 12:30 até 15:00
+                horas_disponiveis = [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h == 12 and m >= 30) or (h == 13) or (h == 14) or (h == 15 and m == 0)]
             else:
-                h_min, h_max = time(19, 0), time(22, 0)
-                
-            hora_sel = st.time_input(f"Hora ({turno})", h_min)
-            
-            if not (h_min <= hora_sel <= h_max):
-                st.warning(f"Fora de horário: {h_min.strftime('%H:%M')} - {h_max.strftime('%H:%M')}")
+                # Lista de 19:00 até 22:30
+                horas_disponiveis = [f"{h:02d}:{m:02d}" for h in range(19, 23) for m in [0, 15, 30, 45] if (h >= 19 and h <= 22)]
+
+            hora_sel = st.selectbox("Hora da Reserva", horas_disponiveis)
             
             nome_res = st.text_input("Nome Cliente")
             pax_res = st.number_input("Pessoas", 1, 20, 2)
@@ -61,20 +59,22 @@ def render_mesa(m_id, col):
         txt += f"<br>{m['info']}<br><span class='nota-display'>{m['nota']}</span>"
     else:
         txt += "<br>LIVRE"
+    
     col.markdown(f"<div class='{classe}'>{txt}</div>", unsafe_allow_html=True)
+    
     if not m["ocupada"] and not bloqueio:
         if col.button(f"SENTAR {m_id}", key=f"s{m_id}"):
             if nome_res:
-                info_pax = f"{nome_res} ({pax_res}p) @ {hora_sel.strftime('%H:%M')}"
+                info_pax = f"{nome_res} ({pax_res}p) @ {hora_sel}"
                 st.session_state.sala[m_id] = {"ocupada": True, "info": info_pax, "nota": nota_res}
                 st.rerun()
-            else: st.error("Nome?")
+            else: st.error("Falta o nome!")
     elif m["ocupada"]:
         if col.button(f"LIBERTAR {m_id}", key=f"l{m_id}"):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT GEOMÉTRICO ---
+# --- LAYOUT GEOMÉTRICO (MANTIDO) ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
 c1, c2, c3 = st.columns(3)
