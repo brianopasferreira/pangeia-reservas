@@ -24,7 +24,6 @@ if 'sala' not in st.session_state:
 with st.sidebar:
     st.title("RESERVA")
     data_sel = st.date_input("Data", datetime.now())
-    
     if data_sel.weekday() == 0:
         st.error("FECHADO À SEGUNDA")
         bloqueio = True
@@ -33,7 +32,6 @@ with st.sidebar:
         turno = st.selectbox("Turno", ["Almoço", "Jantar"])
         h_min = time(12,0) if turno == "Almoço" else time(19,0)
         hora_sel = st.time_input("Hora da Reserva", h_min)
-        
         nome_res = st.text_input("Nome Cliente")
         pax_res = st.number_input("Pessoas", 1, 20, 2)
         nota_res = st.text_area("Notas / Observações")
@@ -47,9 +45,7 @@ def render_mesa(m_id, col):
         txt += f"<br>{m['info']}<br><span class='nota-display'>{m['nota']}</span>"
     else:
         txt += "<br>LIVRE"
-        
     col.markdown(f"<div class='{classe}'>{txt}</div>", unsafe_allow_html=True)
-    
     if not m["ocupada"]:
         if col.button(f"SENTAR {m_id}", key=f"s{m_id}"):
             if nome_res:
@@ -62,7 +58,7 @@ def render_mesa(m_id, col):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT (AJUSTE MESA 6) ---
+# --- LAYOUT FINAL ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
 if not bloqueio:
@@ -72,24 +68,24 @@ if not bloqueio:
         st.caption("ALA MAR")
         for m in [11, 10, 9, 8]: render_mesa(m, c1)
         st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True) 
-        render_mesa(7, c1) # Alinhada com a 6
+        render_mesa(7, c1) # MESA 7
 
     with c2: # CENTRO
         st.caption("CENTRO")
         for m in [12, 19, 20]: render_mesa(m, c2)
-        # ESPAÇO AMPLIADO PARA A 6 DESCER
-        st.markdown("<div style='height:280px;'></div>", unsafe_allow_html=True) 
-        render_mesa(6, c2) 
-        # MESA 4 (PERFEITA)
+        # AJUSTE CALIBRADO: 85px para a 6 ficar ao lado da 7
+        st.markdown("<div style='height:85px;'></div>", unsafe_allow_html=True) 
+        render_mesa(6, c2) # MESA 6 (Fila da 7)
+        # ESPAÇO PARA A 4 FICAR AO LADO DA 2
         st.markdown("<div style='height:165px;'></div>", unsafe_allow_html=True) 
-        render_mesa(4, c2) 
+        render_mesa(4, c2) # MESA 4 (Fila da 2)
 
     with c3: # JANELA
         st.caption("JANELA")
         for m in [14, 16, 17, 18]: render_mesa(m, c3)
         st.markdown("<div style='text-align:center;border:1px dashed #444;margin:10px 0;font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
         render_mesa(1, c3)
-        render_mesa(2, c3) # Alinhada com a 4
+        render_mesa(2, c3) 
         render_mesa(3, c3)
 
 st.write("---")
