@@ -24,22 +24,22 @@ if 'sala' not in st.session_state:
         "Jantar": {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
     }
 
-# --- SIDEBAR (Dados da Reserva) ---
+# --- SIDEBAR (Dados Comuns da Reserva) ---
 with st.sidebar:
-    st.title("NOVA RESERVA")
+    st.title("RESERVA")
     data_sel = st.date_input("Data", datetime.now())
+    dia_semana = data_sel.weekday()
     
-    if data_sel.weekday() == 0: # Segunda-feira
-        st.error("Restaurante Encerrado")
-        bloqueio_geral = True
-    else:
-        bloqueio_geral = False
-        nome_res = st.text_input("Nome Cliente")
-        pax_res = st.number_input("Pessoas", 1, 20, 2)
-        nota_res = st.text_area("Notas")
+    bloqueio_segunda = (dia_semana == 0)
+    if bloqueio_segunda:
+        st.error("ENCERRADO À SEGUNDA")
+    
+    nome_res = st.text_input("Nome Cliente")
+    pax_res = st.number_input("Pessoas", 1, 20, 2)
+    nota_res = st.text_area("Observações")
 
 # --- FUNÇÃO DE RENDERIZAÇÃO ---
-def render_mesa(m_id, col, turno, h_sel):
+def render_mesa(m_id, col, turno, hora_texto):
     m = st.session_state.sala[turno][m_id]
     classe = "mesa ocupada" if m["ocupada"] else "mesa"
     txt = f"<b>M{m_id}</b><br><small>{MESAS_INFO[m_id]}</small>"
@@ -51,33 +51,78 @@ def render_mesa(m_id, col, turno, h_sel):
     
     col.markdown(f"<div class='{classe}'>{txt}</div>", unsafe_allow_html=True)
     
-    if not m["ocupada"] and not bloqueio_geral:
-        if col.button(f"SENTAR M{m_id}", key=f"s{m_id}_{turno}"):
-            if nome_res:
-                st.session_state.sala[turno][m_id] = {
-                    "ocupada": True, 
-                    "info": f"{nome_res} ({pax_res}p) @ {h_sel}", 
-                    "nota": nota_res
-                }
-                st.rerun()
-            else:
-                st.error("Insira o nome")
-    elif m["ocupada"]:
-        if col.button(f"LIBERTAR M{m_id}", key=f"l{m_id}_{turno}"):
+    # Lógica de Botões
+    if not m["ocupada"]:
+        if not bloqueio_segunda:
+            if col.button(f"SENTAR {m_id}", key=f"s{m_id}_{turno}"):
+                if nome_res:
+                    info_pax = f"{nome_res} ({pax_res}p) @ {hora_texto}"
+                    st.session_state.sala[turno][m_id] = {"ocupada": True, "info": info_pax, "nota": nota_res}
+                    st.rerun()
+                else:
+                    st.error("Falta o Nome!")
+    else:
+        if col.button(f"LIBERTAR {m_id}", key=f"l{m_id}_{turno}"):
             st.session_state.sala[turno][m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- INTERFACE PRINCIPAL COM SEPARADORES ---
-st.title("PANGEIA NAZARÉ")
+# --- INTERFACE COM SEPARADORES ---
+st.markdown("<h1 style='text-align:center;'>PANGEIA NAZARÉ</h1>", unsafe_allow_html=True)
 
+# Criação dos dois separadores solicitados
 tab_almoco, tab_jantar = st.tabs(["🍽️ ALMOÇO", "🌙 JANTAR"])
 
 # --- CONTEÚDO ALMOÇO ---
 with tab_almoco:
-    h_almoco = st.selectbox("Hora Almoço", [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h==12 and m>=30) or (h<15) or (h==15 and m==0)], key="h_alm")
+    h_alm = st.selectbox("Hora Almoço", [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h==12 and m>=30) or (h<15) or (h==15 and m==0)], key="sel_alm")
     
     c1, c2, c3 = st.columns(3)
     with c1: # ALA MAR
-        for mid in [11, 10, 9, 8]: render_mesa(mid, c1, "Almoço", h_almoco)
+        st.caption("ALA MAR")
+        for mid in [11, 10, 9, 8]: render_mesa(mid, c1, "Almoço", h_alm)
         st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
-        render_mesa(7, c1,
+        render_mesa(7, c1, "Almoço", h_alm)
+    with c2: # CENTRO
+        st.caption("CENTRO")
+        for mid in [12, 19, 20]: render_mesa(mid, c2, "Almoço", h_alm)
+        st.markdown("<div style='height:210px;'></div>", unsafe_allow_html=True)
+        render_mesa(6, c2, "Almoço", h_alm)
+        render_mesa(4, c2, "Almoço", h_alm)
+    with c3: # JANELA
+        st.caption("JANELA")
+        for mid in [14, 16, 17, 18]: render_mesa(mid, c3, "Almoço", h_alm)
+        st.markdown("<div style='text-align:center; border:1px dashed #444; margin:10px 0; font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
+        for mid in [1, 2, 3]: render_mesa(mid, c3, "Almoço", h_alm)
+
+    if st.button("LIMPAR TUDO (ALMOÇO)", key="clear_alm"):
+        st.session_state.sala["Almoço"] = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
+        st.rerun()
+
+# --- CONTEÚDO JANTAR ---
+with tab_jantar:
+    if dia_semana == 6: # Domingo
+        st.error("DOMINGO AO JANTAR: ENCERRADO")
+    else:
+        h_jan = st.selectbox("Hora Jantar", [f"{h:02d}:{m:02d}" for h in range(19, 23) for m in [0, 15, 30, 45] if h<=22], key="sel_jan")
+        
+        cj1, cj2, cj3 = st.columns(3)
+        with cj1: # ALA MAR
+            st.caption("ALA MAR")
+            for mid in [11, 10, 9, 8]: render_mesa(mid, cj1, "Jantar", h_jan)
+            st.markdown("<div style='height:60px;'></div>", unsafe_allow_html=True)
+            render_mesa(7, cj1, "Jantar", h_jan)
+        with cj2: # CENTRO
+            st.caption("CENTRO")
+            for mid in [12, 19, 20]: render_mesa(mid, cj2, "Jantar", h_jan)
+            st.markdown("<div style='height:210px;'></div>", unsafe_allow_html=True)
+            render_mesa(6, cj2, "Jantar", h_jan)
+            render_mesa(4, cj2, "Jantar", h_jan)
+        with cj3: # JANELA
+            st.caption("JANELA")
+            for mid in [14, 16, 17, 18]: render_mesa(mid, cj3, "Jantar", h_jan)
+            st.markdown("<div style='text-align:center; border:1px dashed #444; margin:10px 0; font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
+            for mid in [1, 2, 3]: render_mesa(mid, cj3, "Jantar", h_jan)
+
+        if st.button("LIMPAR TUDO (JANTAR)", key="clear_jan"):
+            st.session_state.sala["Jantar"] = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
+            st.rerun()
