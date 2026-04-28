@@ -14,18 +14,17 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# 2. Dados das Mesas
+# 2. Definição das Mesas
 MESAS_INFO = {1:"2p", 2:"4-7p", 3:"2p", 4:"4-7p", 6:"2p", 7:"2p", 8:"4-6p", 9:"4-6p", 10:"2p", 11:"2p", 12:"2p", 14:"2p", 16:"4-7p", 17:"4-7p", 18:"2-3p", 19:"2p", 20:"2p"}
 
-# Inicialização do Estado (Agora guarda por TURNO)
+# 3. Inicialização de Memória Independente por Turno
 if 'sala' not in st.session_state:
-    # Criamos um dicionário para Almoço e outro para Jantar
     st.session_state.sala = {
         "Almoço": {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO},
         "Jantar": {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
     }
 
-# --- SIDEBAR ---
+# --- SIDEBAR (CONTROLO DE TURNO E HORÁRIO) ---
 with st.sidebar:
     st.title("RESERVA")
     data_sel = st.date_input("Data", datetime.now())
@@ -42,18 +41,19 @@ with st.sidebar:
             st.error("ENCERRADO DOMINGO AO JANTAR")
             bloqueio = True
         else:
+            # Filtro de horas específico por turno
             if turno_sel == "Almoço":
-                horas_disponiveis = [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h == 12 and m >= 30) or (h == 13) or (h == 14) or (h == 15 and m == 0)]
+                horas = [f"{h:02d}:{m:02d}" for h in range(12, 16) for m in [0, 15, 30, 45] if (h == 12 and m >= 30) or (h < 15) or (h == 15 and m == 0)]
             else:
-                horas_disponiveis = [f"{h:02d}:{m:02d}" for h in range(19, 23) for m in [0, 15, 30, 45] if (h >= 19 and h <= 22)]
+                horas = [f"{h:02d}:{m:02d}" for h in range(19, 23) for m in [0, 15, 30, 45] if (h >= 19 and h <= 22)]
 
-            hora_sel = st.selectbox("Hora da Reserva", horas_disponiveis)
+            hora_sel = st.selectbox("Hora da Reserva", horas)
             nome_res = st.text_input("Nome Cliente")
             pax_res = st.number_input("Pessoas", 1, 20, 2)
             nota_res = st.text_area("Notas / Observações")
 
+# --- FUNÇÃO DE RENDERIZAÇÃO ---
 def render_mesa(m_id, col, turno):
-    # Acede aos dados específicos do turno selecionado
     m = st.session_state.sala[turno][m_id]
     classe = "mesa ocupada" if m["ocupada"] else "mesa"
     txt = f"<b>M{m_id}</b><br><small>{MESAS_INFO[m_id]}</small>"
@@ -77,17 +77,18 @@ def render_mesa(m_id, col, turno):
             st.session_state.sala[turno][m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT ---
-st.markdown(f"<h2 style='text-align:center;'>PANGEIA NAZARÉ - {turno_sel.upper()}</h2>", unsafe_allow_html=True)
+# --- MAPA DA SALA (ALINHAMENTO GEOMÉTRICO) ---
+st.markdown(f"<h2 style='text-align:center;'>PANGEIA NAZARÉ - {turno_sel.upper() if not bloqueio else ''}</h2>", unsafe_allow_html=True)
 
-c1, c2, c3 = st.columns(3)
+if not bloqueio:
+    c1, c2, c3 = st.columns(3)
 
-with c1: # ALA MAR
-    st.caption("ALA MAR")
-    for m in [11, 10, 9, 8]: render_mesa(m, c1, turno_sel)
-    st.markdown("<div style='height:55px;'></div>", unsafe_allow_html=True) 
-    render_mesa(7, c1, turno_sel) 
+    with c1: # ALA MAR (Esquerda)
+        st.caption("ALA MAR")
+        for m in [11, 10, 9, 8]: render_mesa(m, c1, turno_sel)
+        st.markdown("<div style='height:55px;'></div>", unsafe_allow_html=True) # Alinhamento M7 com Escadas
+        render_mesa(7, c1, turno_sel) 
 
-with c2: # CENTRO
-    st.caption("CENTRO")
-    for m in [12, 19, 20]: render_mesa(m, c2, turno_
+    with c2: # CENTRO
+        st.caption("CENTRO")
+        for m in [12, 19, 20
