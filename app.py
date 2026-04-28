@@ -20,7 +20,7 @@ MESAS_INFO = {1:"2p", 2:"4-7p", 3:"2p", 4:"4-7p", 6:"2p", 7:"2p", 8:"4-6p", 9:"4
 if 'sala' not in st.session_state:
     st.session_state.sala = {m: {"ocupada": False, "info": "", "nota": ""} for m in MESAS_INFO}
 
-# --- SIDEBAR: GESTÃO DE RESERVAS ---
+# --- SIDEBAR ---
 with st.sidebar:
     st.title("RESERVA")
     data_sel = st.date_input("Data", datetime.now())
@@ -31,21 +31,17 @@ with st.sidebar:
     else:
         bloqueio = False
         turno = st.selectbox("Turno", ["Almoço", "Jantar"])
-        # Seletor de Hora
         h_min = time(12,0) if turno == "Almoço" else time(19,0)
-        h_max = time(15,30) if turno == "Almoço" else time(23,0)
         hora_sel = st.time_input("Hora da Reserva", h_min)
         
         nome_res = st.text_input("Nome Cliente")
         pax_res = st.number_input("Pessoas", 1, 20, 2)
-        nota_res = st.text_area("Notas / Observações", placeholder="Ex: Alergias, Janela, Aniversário...")
+        nota_res = st.text_area("Notas / Observações")
 
-# --- FUNÇÃO PARA DESENHAR MESA ---
+# --- FUNÇÃO RENDER ---
 def render_mesa(m_id, col):
     m = st.session_state.sala[m_id]
     classe = "mesa ocupada" if m["ocupada"] else "mesa"
-    
-    # Mostrar Info
     txt = f"<b>M{m_id}</b><br><small>{MESAS_INFO[m_id]}</small>"
     if m["ocupada"]:
         txt += f"<br>{m['info']}<br><span class='nota-display'>{m['nota']}</span>"
@@ -66,7 +62,7 @@ def render_mesa(m_id, col):
             st.session_state.sala[m_id] = {"ocupada": False, "info": "", "nota": ""}
             st.rerun()
 
-# --- LAYOUT DA SALA (ALINHAMENTOS REAIS) ---
+# --- LAYOUT (AJUSTE NA MESA 6) ---
 st.markdown("<h2 style='text-align:center;'>PANGEIA NAZARÉ</h2>", unsafe_allow_html=True)
 
 if not bloqueio:
@@ -75,23 +71,25 @@ if not bloqueio:
     with c1: # ALA MAR
         st.caption("ALA MAR")
         for m in [11, 10, 9, 8]: render_mesa(m, c1)
-        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True) # Alinhamento preciso
-        render_mesa(7, c1) # Nivelada com a 6
+        st.markdown("<div style='height:48px;'></div>", unsafe_allow_html=True) 
+        render_mesa(7, c1) 
 
     with c2: # CENTRO
         st.caption("CENTRO")
         for m in [12, 19, 20]: render_mesa(m, c2)
-        st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
-        render_mesa(6, c2) # ALINHADA COM A 7
-        st.markdown("<div style='height:165px;'></div>", unsafe_allow_html=True) # Espaço para alinhar 4 com 2
-        render_mesa(4, c2) # ALINHADA COM A 2
+        # AJUSTE DA MESA 6 PARA ALINHAR COM A 7
+        st.markdown("<div style='height:38px;'></div>", unsafe_allow_html=True) 
+        render_mesa(6, c2) 
+        # MESA 4 MANTIDA (PERFEITA)
+        st.markdown("<div style='height:165px;'></div>", unsafe_allow_html=True) 
+        render_mesa(4, c2) 
 
     with c3: # JANELA
         st.caption("JANELA")
         for m in [14, 16, 17, 18]: render_mesa(m, c3)
         st.markdown("<div style='text-align:center;border:1px dashed #444;margin:10px 0;font-size:0.7em;'>ESCADAS</div>", unsafe_allow_html=True)
         render_mesa(1, c3)
-        render_mesa(2, c3) # NIVELADA COM A 4
+        render_mesa(2, c3) 
         render_mesa(3, c3)
 
 st.write("---")
